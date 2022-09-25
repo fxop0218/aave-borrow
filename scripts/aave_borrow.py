@@ -4,7 +4,7 @@ from scripts.helpful_scripts import get_account
 from scripts.get_weth import NETWORKS, WETH_T, get_weth
 from web3 import Web3
 
-amount = Web3.toWei(0.05, "ether")
+amount = Web3.toWei(0.1, "ether")
 
 def main():
     account = get_account()
@@ -30,19 +30,32 @@ def main():
         print(f"We are going to borrow {amount_dai_to_borrow} DAI")
         # Now we borrow
         dai_address = config["networks"][network.show_active()]["dai_token"]
-        borrow_transaction = lending_pool.borrow(dai_address,
+        borrow_transaction = lending_pool.borrow(
+            dai_address,
             Web3.toWei(amount_dai_to_borrow, "ether"),
             1,
             0,
             account.address,
-            {"from" : account}
+            {"from": account},
         ) # More information https://docs.aave.com/developers/v/2.0/the-core-protocol/lendingpool#borrow
         borrow_transaction.wait(1)
         print("We borrowed some DAI")
         get_borrowable_data(lending_pool, account)
-
+        repay(amount, lending_pool, account)
     else: 
         raise "Goerli network don't have this feature"
+
+def repay(amount, lending_pool, account):
+    approve_erc20(Web3.toWei(amount,"ether"), lending_pool, config["networks"][network.show_active()]["dai_token"], account)
+    repay_transaction = lending_pool.repay(
+        config["networks"][network.show_active()]["dai_token"],
+        amount,
+        1,
+        account.address,
+        {"from" : account},
+    )
+    repay_transaction.wait(1)
+    print("Ammount repayed")
 
 def get_assert_price(price_feed_address):
     #ABI
